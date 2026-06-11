@@ -52,7 +52,12 @@ a:hover { text-decoration: underline; }
   padding: 12px 0;
 }
 
-.site-logo { width: 90px; height: auto; }
+.logo-link img,
+.site-logo {
+  width: 90px !important;
+  max-width: 90px !important;
+  height: auto !important;
+  display: block;
 .logo-link { flex: 0 0 auto; }
 
 .main-nav {
