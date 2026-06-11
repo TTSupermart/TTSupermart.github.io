@@ -5,14 +5,467 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>T&T Supermart | Bernalillo, NM Grocery Store</title>
   <meta name="description" content="T&T Supermart is a local, family-owned grocery store in Bernalillo, New Mexico offering grocery essentials, fresh departments, household staples, and convenient services." />
- <link rel="stylesheet" href="styles.css?v=3" />
+
+  <style>
+    :root {
+      --teal: #008f92;
+      --teal-dark: #00666d;
+      --navy: #063349;
+      --cream: #fff9ef;
+      --sand: #f1dfc0;
+      --text: #17313d;
+      --muted: #5c6f76;
+      --white: #ffffff;
+      --shadow: 0 18px 45px rgba(6, 51, 73, 0.13);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.6;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    a {
+      color: var(--teal-dark);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .narrow {
+      width: min(820px, calc(100% - 32px));
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 249, 239, 0.96);
+      border-bottom: 1px solid rgba(6, 51, 73, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+      padding: 12px 0;
+    }
+
+    .logo-link {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+    }
+
+    .site-logo {
+      width: 90px;
+      max-width: 90px;
+      height: auto;
+      max-height: 70px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .main-nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-weight: 700;
+      font-size: 0.96rem;
+    }
+
+    .main-nav a {
+      color: var(--navy);
+    }
+
+    .nav-button {
+      background: var(--teal);
+      color: var(--white) !important;
+      padding: 10px 16px;
+      border-radius: 999px;
+    }
+
+    .nav-button:hover {
+      text-decoration: none;
+      background: var(--teal-dark);
+    }
+
+    .hero {
+      background:
+        radial-gradient(circle at 12% 20%, rgba(0, 143, 146, 0.16), transparent 34%),
+        linear-gradient(135deg, #fff9ef 0%, #f8edda 100%);
+      padding: 72px 0;
+    }
+
+    .hero-grid,
+    .two-column {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 42px;
+      align-items: center;
+    }
+
+    .eyebrow,
+    .section-label {
+      text-transform: uppercase;
+      color: var(--teal-dark);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      font-size: 0.82rem;
+      margin: 0 0 10px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--navy);
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: clamp(2.55rem, 6vw, 5rem);
+      margin: 0 0 20px;
+      letter-spacing: -0.05em;
+    }
+
+    h2 {
+      font-size: clamp(2rem, 3.8vw, 3.1rem);
+      margin: 0 0 18px;
+      letter-spacing: -0.035em;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin: 0 0 10px;
+    }
+
+    .hero-text {
+      font-size: 1.22rem;
+      max-width: 680px;
+      color: #314b55;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .hero-actions.centered {
+      justify-content: center;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 13px 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 2px solid var(--teal);
+    }
+
+    .button:hover {
+      text-decoration: none;
+    }
+
+    .button.primary {
+      background: var(--teal);
+      color: var(--white);
+    }
+
+    .button.primary:hover {
+      background: var(--teal-dark);
+      border-color: var(--teal-dark);
+    }
+
+    .button.secondary {
+      background: transparent;
+      color: var(--teal-dark);
+    }
+
+    .hero-card,
+    .specials-card,
+    .info-card,
+    .service-item,
+    .hours-box {
+      background: var(--white);
+      border: 1px solid rgba(6, 51, 73, 0.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 30px;
+    }
+
+    .hero-card h2 {
+      font-size: 2rem;
+    }
+
+    .hours-list {
+      margin: 0;
+    }
+
+    .hours-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(6, 51, 73, 0.1);
+    }
+
+    .hours-list div:last-child {
+      border-bottom: none;
+    }
+
+    .hours-list dt {
+      font-weight: 800;
+    }
+
+    .hours-list dd {
+      margin: 0;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 0;
+    }
+
+    .section {
+      padding: 76px 0;
+    }
+
+    .soft-bg {
+      background: #f7ead6;
+    }
+
+    .intro-section {
+      text-align: center;
+    }
+
+    .intro-section p,
+    .contact-cta p {
+      font-size: 1.15rem;
+      color: #425b64;
+    }
+
+    .specials-card {
+      padding: 32px;
+      border-left: 7px solid var(--teal);
+    }
+
+    .text-link {
+      font-weight: 800;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .info-card {
+      padding: 26px;
+      box-shadow: none;
+    }
+
+    .info-card p,
+    .service-item p {
+      margin-bottom: 0;
+      color: #425b64;
+    }
+
+    .service-list {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-top: 30px;
+    }
+
+    .service-item {
+      padding: 24px;
+      box-shadow: none;
+      background: #fffdf8;
+    }
+
+    .location-grid {
+      align-items: stretch;
+    }
+
+    address {
+      font-style: normal;
+      font-size: 1.08rem;
+      margin: 18px 0;
+    }
+
+    .hours-box {
+      padding: 22px;
+      margin-top: 24px;
+      box-shadow: none;
+    }
+
+    .hours-box p {
+      margin: 8px 0;
+    }
+
+    .map-wrap {
+      min-height: 430px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 8px solid var(--white);
+    }
+
+    .map-wrap iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 430px;
+      border: 0;
+      display: block;
+    }
+
+    .contact-cta {
+      text-align: center;
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .contact-cta h2,
+    .contact-cta p {
+      color: var(--white);
+    }
+
+    .contact-cta .button.secondary {
+      color: var(--white);
+      border-color: var(--white);
+    }
+
+    .site-footer {
+      background: #041f2d;
+      color: rgba(255, 255, 255, 0.82);
+      padding: 26px 0;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-inner p {
+      margin: 0;
+    }
+
+    @media (max-width: 860px) {
+      .header-inner {
+        align-items: flex-start;
+      }
+
+      .main-nav {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px 14px;
+        font-size: 0.9rem;
+      }
+
+      .site-logo {
+        width: 90px;
+        max-width: 90px;
+      }
+
+      .hero-grid,
+      .two-column {
+        grid-template-columns: 1fr;
+      }
+
+      .card-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .service-list {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .header-inner {
+        display: block;
+      }
+
+      .main-nav {
+        justify-content: flex-start;
+        margin-top: 12px;
+      }
+
+      .main-nav a:not(.nav-button) {
+        display: none;
+      }
+
+      .hero {
+        padding: 48px 0;
+      }
+
+      .section {
+        padding: 54px 0;
+      }
+
+      .card-grid,
+      .service-list {
+        grid-template-columns: 1fr;
+      }
+
+      .hours-list div {
+        display: block;
+      }
+
+      .hours-list dd {
+        text-align: left;
+        margin-top: 4px;
+      }
+    }
+  </style>
 </head>
+
 <body>
   <header class="site-header">
     <div class="container header-inner">
       <a class="logo-link" href="#home" aria-label="T&T Supermart home">
-      <img class="site-logo" src="tt-supermart-logo.png" alt="T&T Supermart logo">
+        <img class="site-logo" src="tt-supermart-logo.png" alt="T&T Supermart logo">
       </a>
+
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#weekly-specials">Weekly Specials</a>
         <a href="#departments">Departments</a>
@@ -35,6 +488,7 @@
             <a class="button secondary" href="#weekly-specials">View Weekly Specials</a>
           </div>
         </div>
+
         <div class="hero-card">
           <h2>Store Hours</h2>
           <dl class="hours-list">
@@ -60,6 +514,7 @@
           <h2>Check back for current deals.</h2>
           <p>This section is ready for your weekly ad, featured promotions, seasonal deals, or a simple list of current specials. For now, it is set up as a clean placeholder so the site can launch and be updated later.</p>
         </div>
+
         <div class="specials-card">
           <h3>Coming Soon</h3>
           <p>Weekly grocery specials, meat department features, produce deals, and limited-time offers.</p>
@@ -72,27 +527,33 @@
       <div class="container">
         <p class="section-label">Departments</p>
         <h2>Everything you need for the week.</h2>
+
         <div class="card-grid">
           <article class="info-card">
             <h3>Grocery</h3>
             <p>Pantry staples, everyday essentials, snacks, beverages, household items, and the products your family reaches for most.</p>
           </article>
+
           <article class="info-card">
             <h3>Meat</h3>
             <p>Fresh meat options for weeknight dinners, family meals, weekend cookouts, and traditional favorites.</p>
           </article>
+
           <article class="info-card">
             <h3>Produce</h3>
             <p>Fresh fruits and vegetables for everyday cooking, healthy snacks, and seasonal meals.</p>
           </article>
+
           <article class="info-card">
             <h3>Dairy & Frozen</h3>
             <p>Milk, cheese, eggs, frozen foods, desserts, and convenient meal solutions for busy households.</p>
           </article>
+
           <article class="info-card">
             <h3>Local Favorites</h3>
             <p>A neighborhood selection built around the needs of Bernalillo shoppers and nearby communities.</p>
           </article>
+
           <article class="info-card">
             <h3>Household Basics</h3>
             <p>Cleaning products, paper goods, personal care items, and other must-have products for home.</p>
@@ -105,19 +566,23 @@
       <div class="container">
         <p class="section-label">Services</p>
         <h2>Convenient services close to home.</h2>
+
         <div class="service-list">
           <div class="service-item">
             <h3>Western Union</h3>
             <p>Convenient money transfer services available in store.</p>
           </div>
+
           <div class="service-item">
             <h3>EBT / SNAP</h3>
             <p>We welcome EBT/SNAP customers for eligible grocery purchases.</p>
           </div>
+
           <div class="service-item">
             <h3>WIC</h3>
             <p>WIC items and availability can be confirmed in store or by phone.</p>
           </div>
+
           <div class="service-item">
             <h3>Friendly Local Help</h3>
             <p>Our team is here to help you find what you need and get back to your day.</p>
@@ -131,19 +596,23 @@
         <div>
           <p class="section-label">Location & Contact</p>
           <h2>Visit us in Bernalillo.</h2>
+
           <address>
             <strong>T&T Supermart</strong><br />
             960 S Camino del Pueblo<br />
             Bernalillo, NM 87004
           </address>
+
           <p><strong>Phone:</strong> <a href="tel:15058673210">(505) 867-3210</a></p>
           <p><strong>Email:</strong> <a href="mailto:ttsupermartnm@gmail.com">ttsupermartnm@gmail.com</a></p>
+
           <div class="hours-box">
             <h3>Hours</h3>
             <p><strong>Monday–Saturday:</strong> 8:30 AM – 7:00 PM</p>
             <p><strong>Sunday:</strong> 10:00 AM – 4:00 PM</p>
           </div>
         </div>
+
         <div class="map-wrap" aria-label="Map to T&T Supermart">
           <iframe
             title="Google Map showing T&T Supermart in Bernalillo, New Mexico"
@@ -159,6 +628,7 @@
       <div class="container narrow">
         <h2>Questions about products, services, or specials?</h2>
         <p>Call the store or send us an email and we will be happy to help.</p>
+
         <div class="hero-actions centered">
           <a class="button primary" href="tel:15058673210">Call (505) 867-3210</a>
           <a class="button secondary" href="mailto:ttsupermartnm@gmail.com">Email Us</a>
@@ -174,6 +644,8 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
