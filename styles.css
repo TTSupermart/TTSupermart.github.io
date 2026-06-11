@@ -54,8 +54,8 @@ a:hover { text-decoration: underline; }
 
 .logo-link img,
 .site-logo {
-  width: 90px !important;
-  max-width: 90px !important;
+  width: 120px !important;
+  max-width: 120px !important;
   height: auto !important;
   display: block;
 }
