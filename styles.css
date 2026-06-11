@@ -52,7 +52,7 @@ a:hover { text-decoration: underline; }
   padding: 12px 0;
 }
 
-.site-logo { width: 145px; height: auto; }
+.site-logo { width: 90px; height: auto; }
 .logo-link { flex: 0 0 auto; }
 
 .main-nav {
