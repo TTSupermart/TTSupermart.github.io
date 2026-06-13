@@ -76,8 +76,8 @@ a:hover {
 }
 
 .site-logo {
-  width: 145px;
-  max-width: 145px;
+  width: 120px;
+  max-width: 120px;
   height: auto;
   display: block;
 }
@@ -121,10 +121,6 @@ a:hover {
   grid-template-columns: 1.25fr 0.75fr;
   gap: 42px;
   align-items: center;
-}
-
-.weekly-grid {
-  align-items: start;
 }
 
 .eyebrow,
@@ -290,21 +286,44 @@ h3 {
   margin-bottom: 30px;
 }
 
-.specials-card {
-  padding: 32px;
-  border-left: 7px solid var(--teal);
+/* Weekly Ad */
+
+.weekly-ad-section {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 36px;
+  align-items: start;
 }
 
-.weekly-ad-image {
+.weekly-ad-intro {
+  position: sticky;
+  top: 110px;
+}
+
+.weekly-ad-scroll {
+  max-height: 850px;
+  overflow-y: auto;
+  padding: 18px;
+  background: var(--white);
+  border: 1px solid rgba(6, 51, 73, 0.08);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.weekly-ad-scroll a {
+  display: block;
+  margin-bottom: 24px;
+}
+
+.weekly-ad-scroll a:last-child {
+  margin-bottom: 0;
+}
+
+.weekly-ad-scroll img {
   width: 100%;
   height: auto;
-  border-radius: 16px;
-  margin: 14px 0 18px;
+  border-radius: 12px;
   border: 1px solid rgba(6, 51, 73, 0.12);
-}
-
-.text-link {
-  font-weight: 800;
 }
 
 /* Departments */
@@ -451,13 +470,23 @@ address {
   }
 
   .site-logo {
-    width: 125px;
-    max-width: 125px;
+    width: 120px;
+    max-width: 120px;
   }
 
   .hero-grid,
-  .two-column {
+  .two-column,
+  .weekly-ad-section {
     grid-template-columns: 1fr;
+  }
+
+  .weekly-ad-intro {
+    position: static;
+  }
+
+  .weekly-ad-scroll {
+    max-height: none;
+    overflow-y: visible;
   }
 
   .card-grid {
