@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>T&T Supermart Weekly Ad | Bernalillo, NM</title>
+
+  <meta
+    name="description"
+    content="View the current T&T Supermart weekly ad with all four pages of weekly specials."
+  />
+
+  <link rel="stylesheet" href="styles.css?v=31" />
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo-link" href="index.html" aria-label="T&T Supermart home">
+        <img class="site-logo" src="tt-supermart-logo.png" alt="T&T Supermart logo">
+      </a>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html#weekly-specials">Weekly Specials</a>
+        <a href="index.html#departments">Departments</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#location">Location</a>
+        <a class="nav-button" href="tel:15058673210">Call Us</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section full-ad-page">
+      <div class="container narrow">
+        <div class="full-ad-header">
+          <p class="section-label">Weekly Specials</p>
+          <h1>T&T Supermart Weekly Ad</h1>
+          <p>
+            Scroll down to view all four pages of this week’s ad. Click any page to open that image larger.
+          </p>
+
+          <div class="hero-actions centered">
+            <a class="button secondary" href="index.html#weekly-specials">Back to Website</a>
+            <a class="button primary" href="tel:15058673210">Call About Specials</a>
+          </div>
+        </div>
+
+        <div class="full-ad-viewer" aria-label="Full weekly ad pages">
+          <a href="images/weekly-ad.jpg" target="_blank" rel="noopener">
+            <img src="images/weekly-ad.jpg" alt="T&T Supermart weekly ad page 1">
+          </a>
+
+          <a href="images/weekly-ad-page-2.jpg" target="_blank" rel="noopener">
+            <img src="images/weekly-ad-page-2.jpg" alt="T&T Supermart weekly ad page 2">
+          </a>
+
+          <a href="images/weekly-ad-page-3.jpg" target="_blank" rel="noopener">
+            <img src="images/weekly-ad-page-3.jpg" alt="T&T Supermart weekly ad page 3">
+          </a>
+
+          <a href="images/weekly-ad-page-4.jpg" target="_blank" rel="noopener">
+            <img src="images/weekly-ad-page-4.jpg" alt="T&T Supermart weekly ad page 4">
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; <span id="year"></span> T&T Supermart. All rights reserved.</p>
+      <p>960 S Camino del Pueblo, Bernalillo, NM 87004</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
