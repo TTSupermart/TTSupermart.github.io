@@ -326,6 +326,48 @@ h3 {
   border: 1px solid rgba(6, 51, 73, 0.12);
 }
 
+/* Full Weekly Ad Page */
+
+.full-ad-page {
+  background: #f7ead6;
+  min-height: 100vh;
+}
+
+.full-ad-header {
+  text-align: center;
+  margin-bottom: 34px;
+}
+
+.full-ad-header p {
+  font-size: 1.12rem;
+  color: #425b64;
+}
+
+.full-ad-viewer {
+  display: grid;
+  gap: 28px;
+}
+
+.full-ad-viewer a {
+  display: block;
+  padding: 18px;
+  background: var(--white);
+  border: 1px solid rgba(6, 51, 73, 0.08);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.full-ad-viewer a:hover {
+  text-decoration: none;
+}
+
+.full-ad-viewer img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(6, 51, 73, 0.12);
+}
+
 /* Departments */
 
 .card-grid {
@@ -539,5 +581,9 @@ address {
   .hours-list dd {
     text-align: left;
     margin-top: 4px;
+  }
+
+  .full-ad-viewer a {
+    padding: 10px;
   }
 }
