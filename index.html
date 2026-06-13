@@ -3,257 +3,294 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>T&T Supermart | Bernalillo, NM Grocery Store</title>
-
+  <title>T&amp;T Supermart | Bernalillo, NM</title>
   <meta
     name="description"
-    content="T&T Supermart is a local, family-owned grocery store in Bernalillo, New Mexico offering grocery essentials, fresh departments, weekly specials, household staples, and convenient services."
+    content="T&T Supermart is your local grocery store in Bernalillo, New Mexico. Shop weekly ads, fresh produce, meat, frozen foods, beer, and everyday grocery essentials."
   />
-
   <link rel="stylesheet" href="styles.css?v=31" />
+  <script src="script.js?v=31" defer></script>
 </head>
 
 <body>
   <header class="site-header">
-    <div class="container header-inner">
-      <a class="logo-link" href="#home" aria-label="T&T Supermart home">
-        <img class="site-logo" src="tt-supermart-logo.png" alt="T&T Supermart logo">
+    <div class="header-inner">
+      <a class="logo-link" href="#top" aria-label="T&T Supermart home">
+        <img class="site-logo" src="tt-supermart-logo.png" alt="T&T Supermart logo" />
       </a>
 
       <nav class="main-nav" aria-label="Main navigation">
-        <a href="#weekly-specials">Weekly Specials</a>
+        <a href="#weekly-specials">Weekly Ad</a>
         <a href="#departments">Departments</a>
         <a href="#services">Services</a>
         <a href="#location">Location</a>
-        <a class="nav-button" href="tel:15058673210">Call Us</a>
+        <a href="#contact">Contact</a>
       </nav>
+
+      <div class="header-socials" aria-label="Social media links">
+        <a
+          class="social-link small"
+          href="https://www.facebook.com/TTSupermart"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Visit T&T Supermart on Facebook"
+        >
+          Facebook
+        </a>
+        <a
+          class="social-link small"
+          href="https://www.instagram.com/ttsupermart/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Visit T&T Supermart on Instagram"
+        >
+          Instagram
+        </a>
+      </div>
     </div>
   </header>
 
-  <main id="home">
+  <main id="top">
     <section class="hero">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="eyebrow">Local • Family-Owned • Bernalillo</p>
-          <h1>Your neighborhood grocery store in Bernalillo.</h1>
-          <p class="hero-text">
-            T&T Supermart proudly serves Bernalillo and the surrounding communities with everyday grocery essentials,
-            fresh departments, friendly service, weekly deals, and convenient store services.
-          </p>
+      <div class="hero-content">
+        <p class="eyebrow">Locally owned grocery store</p>
+        <h1>Your neighborhood market in Bernalillo</h1>
+        <p class="hero-text">
+          T&amp;T Supermart is proud to serve Bernalillo and the surrounding community with
+          groceries, fresh departments, weekly deals, and friendly local service.
+        </p>
 
-          <div class="hero-actions">
-            <a class="button primary" href="#weekly-specials">View Weekly Ad</a>
-            <a class="button secondary" href="#location">Get Directions</a>
-          </div>
+        <div class="hero-actions">
+          <a class="button primary" href="#weekly-specials">View Weekly Ad</a>
+          <a
+            class="button secondary"
+            href="https://www.facebook.com/TTSupermart"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Follow on Facebook
+          </a>
+          <a
+            class="button secondary"
+            href="https://www.instagram.com/ttsupermart/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Follow on Instagram
+          </a>
         </div>
+      </div>
 
-        <div class="hero-card">
-          <h2>Store Hours</h2>
-
-          <dl class="hours-list">
-            <div>
-              <dt>Monday–Saturday</dt>
-              <dd>8:30 AM – 7:00 PM</dd>
-            </div>
-            <div>
-              <dt>Sunday</dt>
-              <dd>10:00 AM – 4:00 PM</dd>
-            </div>
-          </dl>
-
-          <p class="small-note">Hours may vary on holidays. Please call ahead for holiday hours.</p>
-        </div>
+      <div class="hero-image-wrap">
+        <img
+          class="hero-image"
+          src="images/anniversary-banner.jpg"
+          alt="T&T Supermart anniversary banner"
+        />
       </div>
     </section>
 
-    <section class="section intro-section">
-      <div class="container narrow">
-        <img class="feature-photo" src="images/anniversary-banner.jpg" alt="T&T Supermart anniversary banner">
-
-        <h2>Welcome to T&T Supermart</h2>
-
+    <section class="intro-section">
+      <div class="intro-card">
+        <h2>Welcome to T&amp;T Supermart</h2>
         <p>
-          T&T Supermart is a locally owned grocery store focused on serving our community with dependable staples,
-          fresh foods, household items, and friendly service. Whether you are stopping in for dinner ingredients,
-          weekly groceries, or convenient services, we are glad to be part of your routine.
+          We are a local grocery store focused on serving our customers with everyday staples,
+          fresh foods, weekly specials, and the kind of service you expect from a neighborhood market.
         </p>
       </div>
     </section>
 
-    <section id="weekly-specials" class="section soft-bg">
-      <div class="container weekly-ad-section">
-        <div class="weekly-ad-intro">
-          <p class="section-label">Weekly Specials</p>
-          <h2>This week’s full ad.</h2>
-          <p>
-            Scroll through all four pages of our current weekly ad. Click any page to open it larger.
-          </p>
+    <section id="weekly-specials" class="section weekly-section">
+      <div class="section-heading">
+        <p class="eyebrow">This week’s full ad</p>
+        <h2>Weekly Specials</h2>
+        <p>
+          Scroll through all four pages of our current weekly ad. Click any page to open it larger.
+        </p>
+      </div>
 
-          <div class="hero-actions">
-            <a class="button primary" href="weekly-ad.html" target="_blank" rel="noopener">Open Full Weekly Ad</a>
-            <a class="button secondary" href="tel:15058673210">Call About Specials</a>
-          </div>
-        </div>
+      <div class="weekly-actions">
+        <button id="open-weekly-ad" class="button primary" type="button">
+          Open Full 4-Page Ad
+        </button>
+      </div>
 
-        <div class="weekly-ad-scroll" aria-label="Scrollable weekly ad pages">
-          <a href="images/weekly-ad.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad.jpg" alt="T&T Supermart weekly ad page 1">
-          </a>
+      <div class="ad-scroll" aria-label="Scrollable weekly ad pages">
+        <a href="images/weekly-ad.jpg" target="_blank" rel="noopener noreferrer">
+          <img src="images/weekly-ad.jpg" alt="T&T Supermart weekly ad page 1" />
+        </a>
 
-          <a href="images/weekly-ad-page-2.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad-page-2.jpg" alt="T&T Supermart weekly ad page 2">
-          </a>
+        <a href="images/weekly-ad-page-2.jpg" target="_blank" rel="noopener noreferrer">
+          <img src="images/weekly-ad-page-2.jpg" alt="T&T Supermart weekly ad page 2" />
+        </a>
 
-          <a href="images/weekly-ad-page-3.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad-page-3.jpg" alt="T&T Supermart weekly ad page 3">
-          </a>
+        <a href="images/weekly-ad-page-3.jpg" target="_blank" rel="noopener noreferrer">
+          <img src="images/weekly-ad-page-3.jpg" alt="T&T Supermart weekly ad page 3" />
+        </a>
 
-          <a href="images/weekly-ad-page-4.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad-page-4.jpg" alt="T&T Supermart weekly ad page 4">
-          </a>
-        </div>
+        <a href="images/weekly-ad-page-4.jpg" target="_blank" rel="noopener noreferrer">
+          <img src="images/weekly-ad-page-4.jpg" alt="T&T Supermart weekly ad page 4" />
+        </a>
       </div>
     </section>
 
     <section id="departments" class="section">
-      <div class="container">
-        <p class="section-label">Departments</p>
-        <h2>Everything you need for the week.</h2>
+      <div class="section-heading">
+        <p class="eyebrow">Shop local</p>
+        <h2>Departments</h2>
+        <p>Find the essentials you need for breakfast, lunch, dinner, and everything in between.</p>
+      </div>
 
-        <div class="card-grid">
-          <article class="info-card photo-card">
-            <img src="images/produce.jpg" alt="Fresh produce at T&T Supermart">
-            <div class="photo-card-body">
-              <h3>Produce</h3>
-              <p>Fresh fruits and vegetables for everyday cooking, healthy snacks, and seasonal meals.</p>
-            </div>
-          </article>
+      <div class="department-grid">
+        <article class="department-card">
+          <img src="images/produce.jpg" alt="Fresh produce department" />
+          <div>
+            <h3>Produce</h3>
+            <p>Fresh fruits and vegetables for your family meals.</p>
+          </div>
+        </article>
 
-          <article class="info-card photo-card">
-            <img src="images/meat-department.jpg" alt="Meat department at T&T Supermart">
-            <div class="photo-card-body">
-              <h3>Meat</h3>
-              <p>Fresh meat options for weeknight dinners, family meals, weekend cookouts, and traditional favorites.</p>
-            </div>
-          </article>
+        <article class="department-card">
+          <img src="images/meat-department.jpg" alt="Meat department" />
+          <div>
+            <h3>Meat</h3>
+            <p>Everyday cuts, family packs, and meal-ready options.</p>
+          </div>
+        </article>
 
-          <article class="info-card photo-card">
-            <img src="images/frozen-food.jpg" alt="Frozen food section at T&T Supermart">
-            <div class="photo-card-body">
-              <h3>Frozen Foods</h3>
-              <p>Frozen meals, vegetables, desserts, and convenient staples for busy households.</p>
-            </div>
-          </article>
+        <article class="department-card">
+          <img src="images/frozen-food.jpg" alt="Frozen food department" />
+          <div>
+            <h3>Frozen Foods</h3>
+            <p>Frozen meals, vegetables, desserts, and quick dinner options.</p>
+          </div>
+        </article>
 
-          <article class="info-card photo-card">
-            <img src="images/beer-cooler.jpg" alt="Beer and beverage cooler at T&T Supermart">
-            <div class="photo-card-body">
-              <h3>Beer & Beverages</h3>
-              <p>Cold beverages, beer, mixers, and everyday drink options for shoppers.</p>
-            </div>
-          </article>
-
-          <article class="info-card photo-card">
-            <img src="images/anniversary-banner.jpg" alt="T&T Supermart anniversary banner">
-            <div class="photo-card-body">
-              <h3>Local & Family-Owned</h3>
-              <p>Proudly serving Bernalillo and nearby communities as a long-time neighborhood grocery store.</p>
-            </div>
-          </article>
-
-          <article class="info-card">
-            <h3>Household Basics</h3>
-            <p>Cleaning products, paper goods, personal care items, and other must-have products for home.</p>
-          </article>
-        </div>
+        <article class="department-card">
+          <img src="images/beer-cooler.jpg" alt="Beer cooler department" />
+          <div>
+            <h3>Beer &amp; More</h3>
+            <p>Cold drinks and favorites for gatherings, weekends, and celebrations.</p>
+          </div>
+        </article>
       </div>
     </section>
 
-    <section id="services" class="section soft-bg">
-      <div class="container">
-        <p class="section-label">Services</p>
-        <h2>Convenient services close to home.</h2>
+    <section id="services" class="section services-section">
+      <div class="section-heading">
+        <p class="eyebrow">Here for the community</p>
+        <h2>Store Services</h2>
+      </div>
 
-        <div class="service-list">
-          <div class="service-item">
-            <h3>Western Union</h3>
-            <p>Convenient money transfer services available in store.</p>
-          </div>
+      <div class="service-grid">
+        <div class="service-card">
+          <h3>Weekly Deals</h3>
+          <p>Check back each week for new specials and savings throughout the store.</p>
+        </div>
 
-          <div class="service-item">
-            <h3>EBT / SNAP</h3>
-            <p>We welcome EBT/SNAP customers for eligible grocery purchases.</p>
-          </div>
+        <div class="service-card">
+          <h3>Fresh Grocery Essentials</h3>
+          <p>Shop everyday pantry items, refrigerated goods, frozen foods, snacks, and more.</p>
+        </div>
 
-          <div class="service-item">
-            <h3>WIC</h3>
-            <p>WIC items and availability can be confirmed in store or by phone.</p>
-          </div>
-
-          <div class="service-item">
-            <h3>Friendly Local Help</h3>
-            <p>Our team is here to help you find what you need and get back to your day.</p>
-          </div>
+        <div class="service-card">
+          <h3>Local Service</h3>
+          <p>We are proud to be part of Bernalillo and serve our neighbors every day.</p>
         </div>
       </div>
     </section>
 
     <section id="location" class="section location-section">
-      <div class="container two-column location-grid">
-        <div>
-          <p class="section-label">Location & Contact</p>
-          <h2>Visit us in Bernalillo.</h2>
+      <div class="section-heading">
+        <p class="eyebrow">Visit us</p>
+        <h2>Location &amp; Hours</h2>
+      </div>
 
-          <address>
-            <strong>T&T Supermart</strong><br>
-            960 S Camino del Pueblo<br>
+      <div class="location-grid">
+        <div class="location-card">
+          <h3>T&amp;T Supermart</h3>
+          <p>
+            960 S Camino del Pueblo<br />
             Bernalillo, NM 87004
-          </address>
+          </p>
 
-          <p><strong>Phone:</strong> <a href="tel:15058673210">(505) 867-3210</a></p>
-          <p><strong>Email:</strong> <a href="mailto:ttsupermartnm@gmail.com">ttsupermartnm@gmail.com</a></p>
+          <h4>Hours</h4>
+          <p>
+            Monday–Saturday: 8:30 AM – 7:00 PM<br />
+            Sunday: 10:00 AM – 4:00 PM
+          </p>
 
-          <div class="hours-box">
-            <h3>Hours</h3>
-            <p><strong>Monday–Saturday:</strong> 8:30 AM – 7:00 PM</p>
-            <p><strong>Sunday:</strong> 10:00 AM – 4:00 PM</p>
-          </div>
+          <h4>Phone</h4>
+          <p><a href="tel:15058673210">(505) 867-3210</a></p>
         </div>
 
-        <div class="map-wrap" aria-label="Map to T&T Supermart">
+        <div class="map-wrap">
           <iframe
-            title="Google Map showing T&T Supermart in Bernalillo, New Mexico"
-            src="https://www.google.com/maps?q=960%20S%20Camino%20del%20Pueblo%2C%20Bernalillo%20NM%2087004&output=embed"
+            title="Map to T&T Supermart"
+            src="https://www.google.com/maps?q=960%20S%20Camino%20del%20Pueblo%20Bernalillo%20NM%2087004&output=embed"
             loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade">
-          </iframe>
+            referrerpolicy="no-referrer-when-downgrade"
+          ></iframe>
         </div>
       </div>
     </section>
 
-    <section id="contact" class="section contact-cta">
-      <div class="container narrow">
-        <h2>Questions about products, services, or specials?</h2>
-        <p>Call the store or send us an email and we will be happy to help.</p>
+    <section id="contact" class="section contact-section">
+      <div class="contact-card">
+        <p class="eyebrow">Stay connected</p>
+        <h2>Contact T&amp;T Supermart</h2>
+        <p>
+          Have a question, want to check our latest updates, or want to follow along with weekly
+          specials? Connect with us below.
+        </p>
 
-        <div class="hero-actions centered">
-          <a class="button primary" href="tel:15058673210">Call (505) 867-3210</a>
+        <div class="contact-actions">
+          <a class="button primary" href="tel:15058673210">Call Us</a>
           <a class="button secondary" href="mailto:ttsupermartnm@gmail.com">Email Us</a>
+        </div>
+
+        <div class="social-section">
+          <h3>Follow us</h3>
+          <div class="social-links">
+            <a
+              class="social-link"
+              href="https://www.facebook.com/TTSupermart"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Facebook
+            </a>
+            <a
+              class="social-link"
+              href="https://www.instagram.com/ttsupermart/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Instagram
+            </a>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-inner">
-      <p>&copy; <span id="year"></span> T&T Supermart. All rights reserved.</p>
+    <div>
+      <strong>T&amp;T Supermart</strong>
       <p>960 S Camino del Pueblo, Bernalillo, NM 87004</p>
     </div>
-  </footer>
 
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-  </script>
+    <div class="footer-socials">
+      <a href="https://www.facebook.com/TTSupermart" target="_blank" rel="noopener noreferrer">
+        Facebook
+      </a>
+      <span>|</span>
+      <a href="https://www.instagram.com/ttsupermart/" target="_blank" rel="noopener noreferrer">
+        Instagram
+      </a>
+    </div>
+
+    <p>&copy; <span id="year"></span> T&amp;T Supermart. All rights reserved.</p>
+  </footer>
 </body>
 </html>
