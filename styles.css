@@ -300,27 +300,21 @@ h4 {
   box-shadow: var(--shadow);
 }
 
-.ad-scroll {
-  display: flex;
-  gap: 18px;
-  overflow-x: auto;
-  padding: 12px 4px 18px;
-  scroll-snap-type: x mandatory;
-}
-
-.ad-scroll a {
-  flex: 0 0 min(430px, 88vw);
-  scroll-snap-align: start;
+.pdf-viewer {
+  margin-top: 24px;
+  width: 100%;
+  height: 850px;
+  border: 1px solid var(--border);
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid var(--border);
   background: var(--white);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-.ad-scroll img {
+.pdf-viewer iframe {
   width: 100%;
-  height: auto;
+  height: 100%;
+  border: 0;
 }
 
 .department-grid {
@@ -601,6 +595,10 @@ h4 {
     width: 100%;
     min-width: 0;
   }
+
+  .pdf-viewer {
+    height: 650px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -662,7 +660,7 @@ h4 {
     width: 100%;
   }
 
-  .ad-scroll a {
-    flex-basis: 92vw;
+  .pdf-viewer {
+    height: 560px;
   }
 }
