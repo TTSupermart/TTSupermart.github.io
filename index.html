@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>T&T Supermart | Bernalillo, NM</title>
   <meta name="description" content="T&T Supermart is a locally owned grocery store in Bernalillo, NM offering groceries, fresh departments, weekly specials, and local store services." />
-  <link rel="stylesheet" href="styles.css?v=40" />
+  <link rel="stylesheet" href="styles.css?v=41" />
 </head>
 
 <body id="top">
@@ -84,26 +84,19 @@
         <div class="section-heading">
           <p class="eyebrow">This week’s full ad</p>
           <h2>Weekly Specials</h2>
-          <p>Scroll through all four pages of our current weekly ad. Click any page to open it larger.</p>
+          <p>View our current weekly ad below, or open the PDF in a new tab for a larger view.</p>
         </div>
 
         <div class="weekly-actions">
-          <a class="button primary" href="weekly-ad.html" target="_blank" rel="noopener">Open Full 4-Page Ad</a>
+          <a class="button primary" href="images/weekly-ad.pdf" target="_blank" rel="noopener">Open Weekly Ad PDF</a>
         </div>
 
-        <div class="ad-scroll" aria-label="Scrollable weekly ad pages">
-          <a href="images/weekly-ad.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad.jpg" alt="Weekly ad page 1" />
-          </a>
-          <a href="images/weekly-ad-page-2.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad-page-2.jpg" alt="Weekly ad page 2" />
-          </a>
-          <a href="images/weekly-ad-page-3.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad-page-3.jpg" alt="Weekly ad page 3" />
-          </a>
-          <a href="images/weekly-ad-page-4.jpg" target="_blank" rel="noopener">
-            <img src="images/weekly-ad-page-4.jpg" alt="Weekly ad page 4" />
-          </a>
+        <div class="pdf-viewer">
+          <iframe
+            src="images/weekly-ad.pdf"
+            title="T&T Supermart Weekly Ad"
+            loading="lazy">
+          </iframe>
         </div>
       </div>
     </section>
@@ -291,6 +284,6 @@
     <p>&copy; <span id="year"></span> T&T Supermart. All rights reserved.</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=41"></script>
 </body>
 </html>
