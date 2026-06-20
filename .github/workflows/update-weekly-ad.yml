@@ -107,8 +107,8 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
-          PDF_CHANGED: ${{ steps.commit_pdf.outputs.pdf_changed || 'false' }}
-          COMMIT_STATUS: ${{ steps.commit_pdf.outputs.commit_status || (steps.fetch_pdf.outcome == 'success' && 'skipped' || 'not-run') }}
+          PDF_CHANGED: ${{ steps.commit_pdf.outputs.pdf_changed }}
+          COMMIT_STATUS: ${{ steps.commit_pdf.outputs.commit_status }}
           COMMIT_SHA: ${{ steps.commit_pdf.outputs.commit_sha }}
           GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python scripts/send_weekly_ad_notification.py
