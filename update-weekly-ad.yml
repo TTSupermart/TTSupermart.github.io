@@ -1,0 +1,120 @@
+name: Update weekly ad PDF
+
+on:
+  schedule:
+    - cron: "7 14 * * 3"
+    - cron: "7 15 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-weekly-ad
+  cancel-in-progress: false
+
+jobs:
+  update-weekly-ad:
+    name: Fetch newest weekly ad from Gmail
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm scheduled Denver time
+        id: schedule_time
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" != "schedule" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual run requested; continuing."
+            exit 0
+          fi
+
+          denver_time="$(TZ=America/Denver date +'%u %H:%M')"
+          if [[ "$denver_time" == "3 08:07" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Scheduled run is Wednesday 08:07 America/Denver; continuing."
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Scheduled run is $denver_time America/Denver; skipping."
+          fi
+
+      - name: Check out repository
+        if: steps.schedule_time.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        if: steps.schedule_time.outputs.should_run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PDF tooling
+        if: steps.schedule_time.outputs.should_run == 'true'
+        run: python -m pip install --upgrade pypdf
+
+      - name: Download weekly ad PDF from Gmail
+        id: fetch_pdf
+        if: steps.schedule_time.outputs.should_run == 'true'
+        continue-on-error: true
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+        run: python scripts/fetch_weekly_ad.py
+
+      - name: Commit and push if PDF changed
+        id: commit_pdf
+        if: steps.schedule_time.outputs.should_run == 'true' && steps.fetch_pdf.outcome == 'success'
+        shell: bash
+        run: |
+          if git diff --quiet -- images/weekly-ad.pdf; then
+            echo "pdf_changed=false" >> "$GITHUB_OUTPUT"
+            echo "commit_status=unchanged" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=" >> "$GITHUB_OUTPUT"
+            echo "images/weekly-ad.pdf is unchanged; nothing to commit."
+            exit 0
+          fi
+
+          set +e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images/weekly-ad.pdf
+          git commit -m "Update weekly ad PDF"
+          commit_result=$?
+          if [[ $commit_result -eq 0 ]]; then
+            git push origin HEAD:main
+            push_result=$?
+          else
+            push_result=$commit_result
+          fi
+
+          echo "pdf_changed=true" >> "$GITHUB_OUTPUT"
+          if [[ $push_result -eq 0 ]]; then
+            echo "commit_status=pushed" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "Committed and pushed updated weekly ad PDF."
+          else
+            echo "commit_status=failed" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=" >> "$GITHUB_OUTPUT"
+            echo "Commit or push failed."
+          fi
+
+      - name: Send upload notification
+        if: steps.schedule_time.outputs.should_run == 'true' && always()
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          PDF_CHANGED: ${{ steps.commit_pdf.outputs.pdf_changed || 'false' }}
+          COMMIT_STATUS: ${{ steps.commit_pdf.outputs.commit_status || (steps.fetch_pdf.outcome == 'success' && 'skipped' || 'not-run') }}
+          COMMIT_SHA: ${{ steps.commit_pdf.outputs.commit_sha }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python scripts/send_weekly_ad_notification.py
+
+      - name: Fail workflow if upload did not complete
+        if: steps.schedule_time.outputs.should_run == 'true' && (steps.fetch_pdf.outcome != 'success' || steps.commit_pdf.outputs.commit_status == 'failed')
+        run: |
+          echo "Weekly ad upload did not complete successfully. See the notification and logs for details."
+          exit 1
