@@ -114,6 +114,7 @@ def build_body(summary: dict[str, Any]) -> str:
         "Weekly ad upload summary",
         "",
         f"Download status: {summary.get('status', 'unknown')}",
+        f"Target week: {summary.get('target_week') or 'Unknown'}",
         f"Gmail attachment found: {summary.get('attachment_filename') or 'None'}",
         f"Gmail subject: {summary.get('gmail_subject') or 'None'}",
         f"Saved path: {summary.get('output_path') or 'images/weekly-ad.pdf'}",
