@@ -5,6 +5,11 @@ on:
     - cron: "7 14 * * 3"
     - cron: "7 15 * * 3"
   workflow_dispatch:
+    inputs:
+      week:
+        description: "Optional week override, such as WK25 or 25"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -61,6 +66,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          WEEKLY_AD_WEEK: ${{ github.event.inputs.week }}
         run: python scripts/fetch_weekly_ad.py
 
       - name: Commit and push if PDF changed
