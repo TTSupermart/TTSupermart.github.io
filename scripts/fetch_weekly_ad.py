@@ -12,8 +12,10 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from pypdf import PdfReader
 
@@ -25,7 +27,8 @@ OUTPUT_PATH = Path("images/weekly-ad.pdf")
 SUMMARY_PATH = Path("work/weekly-ad-summary.json")
 EXPECTED_PAGE_COUNT = 4
 MAX_MESSAGES_TO_CHECK = 50
-WEEK_RE = re.compile(r"\bWK\s*\d{1,2}\b", re.IGNORECASE)
+DENVER_TIMEZONE = "America/Denver"
+WEEK_RE = re.compile(r"\bWK\s*0?(\d{1,2})\b", re.IGNORECASE)
 
 
 class WeeklyAdError(RuntimeError):
@@ -37,6 +40,28 @@ def require_env(name: str) -> str:
     if not value:
         raise WeeklyAdError(f"Missing required environment variable: {name}")
     return value
+
+
+def current_week_number() -> int:
+    override = os.environ.get("WEEKLY_AD_WEEK", "").strip()
+    if override:
+        match = re.fullmatch(r"(?:WK)?\s*0?(\d{1,2})", override, re.IGNORECASE)
+        if not match:
+            raise WeeklyAdError(f"Invalid WEEKLY_AD_WEEK override: {override!r}. Use a value like WK25 or 25.")
+        week = int(match.group(1))
+        if not 1 <= week <= 53:
+            raise WeeklyAdError(f"Invalid WEEKLY_AD_WEEK override: {override!r}. Week must be 1 through 53.")
+        print(f"Using manual weekly ad week override: WK{week:02d}.")
+        return week
+
+    now = datetime.now(ZoneInfo(DENVER_TIMEZONE))
+    week = now.isocalendar().week
+    print(f"Current {DENVER_TIMEZONE} ISO week is WK{week:02d}.")
+    return week
+
+
+def subject_week_numbers(subject: str) -> list[int]:
+    return [int(match.group(1)) for match in WEEK_RE.finditer(subject)]
 
 
 def request_json(url: str, *, method: str = "GET", token: str | None = None, data: dict[str, str] | None = None) -> dict[str, Any]:
@@ -130,7 +155,7 @@ def pdf_attachment_parts(message: dict[str, Any]) -> list[dict[str, Any]]:
     return parts
 
 
-def fetch_message_details(token: str, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def fetch_message_details(token: str, messages: list[dict[str, Any]], target_week: int) -> list[dict[str, Any]]:
     detailed = []
     for index, item in enumerate(messages, start=1):
         message = gmail_get(
@@ -141,14 +166,19 @@ def fetch_message_details(token: str, messages: list[dict[str, Any]]) -> list[di
         subject = header_value(message, "Subject")
         internal_date = int(message.get("internalDate", "0"))
         pdf_count = len(pdf_attachment_parts(message))
-        has_week = bool(WEEK_RE.search(subject))
-        print(f"Candidate {index}: subject={subject!r}, week_indicator={has_week}, pdf_attachments={pdf_count}")
+        weeks = subject_week_numbers(subject)
+        target_week_match = target_week in weeks
+        print(
+            f"Candidate {index}: subject={subject!r}, weeks={weeks or 'none'}, "
+            f"target_week_match={target_week_match}, pdf_attachments={pdf_count}"
+        )
         detailed.append(
             {
                 "message": message,
                 "subject": subject,
                 "internal_date": internal_date,
-                "has_week": has_week,
+                "weeks": weeks,
+                "target_week_match": target_week_match,
                 "pdf_count": pdf_count,
             }
         )
@@ -180,10 +210,19 @@ def write_summary(summary: dict[str, Any]) -> None:
     SUMMARY_PATH.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def select_and_download_pdf(token: str, candidates: list[dict[str, Any]]) -> tuple[bytes, str, str]:
+def select_and_download_pdf(token: str, candidates: list[dict[str, Any]], target_week: int) -> tuple[bytes, str, str]:
+    week_candidates = [candidate for candidate in candidates if candidate["target_week_match"]]
+    if not week_candidates:
+        found_weeks = sorted({week for candidate in candidates for week in candidate["weeks"]})
+        found_label = ", ".join(f"WK{week:02d}" for week in found_weeks) if found_weeks else "none"
+        raise WeeklyAdError(
+            f'No matching "Web Ad" email with a PDF attachment had the current week indicator WK{target_week:02d}. '
+            f"Week indicators found: {found_label}."
+        )
+
     sorted_candidates = sorted(
-        candidates,
-        key=lambda item: (item["has_week"], item["internal_date"]),
+        week_candidates,
+        key=lambda item: item["internal_date"],
         reverse=True,
     )
 
@@ -212,15 +251,19 @@ def select_and_download_pdf(token: str, candidates: list[dict[str, Any]]) -> tup
     if not saw_pdf:
         raise WeeklyAdError('Matching Gmail messages were found, but none had a PDF attachment.')
 
-    raise WeeklyAdError(f"No matching PDF attachment had exactly {EXPECTED_PAGE_COUNT} pages.")
+    raise WeeklyAdError(
+        f"No WK{target_week:02d} PDF attachment had exactly {EXPECTED_PAGE_COUNT} pages."
+    )
 
 
 def main() -> int:
+    target_week: int | None = None
     try:
+        target_week = current_week_number()
         token = get_access_token()
         messages = list_matching_messages(token)
-        candidates = fetch_message_details(token, messages)
-        pdf_bytes, subject, filename = select_and_download_pdf(token, candidates)
+        candidates = fetch_message_details(token, messages, target_week)
+        pdf_bytes, subject, filename = select_and_download_pdf(token, candidates, target_week)
 
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT_PATH.write_bytes(pdf_bytes)
@@ -230,6 +273,7 @@ def main() -> int:
                 "attachment_filename": filename,
                 "gmail_subject": subject,
                 "output_path": str(OUTPUT_PATH),
+                "target_week": f"WK{target_week:02d}",
                 "issues": [],
             }
         )
@@ -242,6 +286,7 @@ def main() -> int:
                 "attachment_filename": None,
                 "gmail_subject": None,
                 "output_path": str(OUTPUT_PATH),
+                "target_week": f"WK{target_week:02d}" if target_week else None,
                 "issues": [str(exc)],
             }
         )
