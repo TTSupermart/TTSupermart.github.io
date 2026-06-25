@@ -78,7 +78,7 @@ jobs:
           WEEKLY_AD_WEEK: ${{ github.event.inputs.week }}
         run: python scripts/fetch_weekly_ad.py
 
-      - name: Commit and push if PDF changed
+           - name: Commit and push if PDF changed
         id: commit_pdf
         if: steps.schedule_time.outputs.should_run == 'true' && steps.fetch_pdf.outcome == 'success'
         shell: bash
@@ -93,4 +93,24 @@ jobs:
 
           set +e
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images/weekly-ad.pdf
+          git commit -m "Update weekly ad PDF"
+          commit_result=$?
+          if [[ $commit_result -eq 0 ]]; then
+            git push origin HEAD:main
+            push_result=$?
+          else
+            push_result=$commit_result
+          fi
+
+          echo "pdf_changed=true" >> "$GITHUB_OUTPUT"
+          if [[ $push_result -eq 0 ]]; then
+            echo "commit_status=pushed" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "Committed and pushed updated weekly ad PDF."
+          else
+            echo "commit_status=failed" >> "$GITHUB_OUTPUT"
+            echo "commit_sha=" >> "$GITHUB_OUTPUT"
+            echo "Commit or push failed."
+          fi
