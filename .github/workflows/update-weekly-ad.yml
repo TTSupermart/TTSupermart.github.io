@@ -33,13 +33,22 @@ jobs:
             exit 0
           fi
 
-          denver_time="$(TZ=America/Denver date +'%u %H:%M')"
-          if [[ "$denver_time" == "3 08:07" ]]; then
+          denver_offset="$(TZ=America/Denver date +'%z')"
+          if [[ "$denver_offset" == "-0600" ]]; then
+            expected_schedule="7 14 * * 3"
+            expected_label="08:07 MDT"
+          else
+            expected_schedule="7 15 * * 3"
+            expected_label="08:07 MST"
+          fi
+
+          actual_schedule="${{ github.event.schedule }}"
+          if [[ "$actual_schedule" == "$expected_schedule" ]]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
-            echo "Scheduled run is Wednesday 08:07 America/Denver; continuing."
+            echo "Scheduled run matches Wednesday $expected_label America/Denver; continuing."
           else
             echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Scheduled run is $denver_time America/Denver; skipping."
+            echo "Scheduled cron $actual_schedule is not the active Denver 8:07 AM cron today; skipping."
           fi
 
       - name: Check out repository
@@ -84,43 +93,4 @@ jobs:
 
           set +e
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add images/weekly-ad.pdf
-          git commit -m "Update weekly ad PDF"
-          commit_result=$?
-          if [[ $commit_result -eq 0 ]]; then
-            git push origin HEAD:main
-            push_result=$?
-          else
-            push_result=$commit_result
-          fi
-
-          echo "pdf_changed=true" >> "$GITHUB_OUTPUT"
-          if [[ $push_result -eq 0 ]]; then
-            echo "commit_status=pushed" >> "$GITHUB_OUTPUT"
-            echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-            echo "Committed and pushed updated weekly ad PDF."
-          else
-            echo "commit_status=failed" >> "$GITHUB_OUTPUT"
-            echo "commit_sha=" >> "$GITHUB_OUTPUT"
-            echo "Commit or push failed."
-          fi
-
-      - name: Send upload notification
-        if: steps.schedule_time.outputs.should_run == 'true' && always()
-        env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
-          PDF_CHANGED: ${{ steps.commit_pdf.outputs.pdf_changed }}
-          COMMIT_STATUS: ${{ steps.commit_pdf.outputs.commit_status }}
-          COMMIT_SHA: ${{ steps.commit_pdf.outputs.commit_sha }}
-          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: python scripts/send_weekly_ad_notification.py
-
-      - name: Fail workflow if upload did not complete
-        if: steps.schedule_time.outputs.should_run == 'true' && (steps.fetch_pdf.outcome != 'success' || steps.commit_pdf.outputs.commit_status == 'failed')
-        run: |
-          echo "Weekly ad upload did not complete successfully. See the notification and logs for details."
-          exit 1
+          git config user.email "41898282+github-actions[bot
