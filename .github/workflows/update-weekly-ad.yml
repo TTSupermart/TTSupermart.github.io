@@ -78,7 +78,7 @@ jobs:
           WEEKLY_AD_WEEK: ${{ github.event.inputs.week }}
         run: python scripts/fetch_weekly_ad.py
 
-           - name: Commit and push if PDF changed
+      - name: Commit and push if PDF changed
         id: commit_pdf
         if: steps.schedule_time.outputs.should_run == 'true' && steps.fetch_pdf.outcome == 'success'
         shell: bash
@@ -114,3 +114,22 @@ jobs:
             echo "commit_sha=" >> "$GITHUB_OUTPUT"
             echo "Commit or push failed."
           fi
+
+      - name: Send upload notification
+        if: steps.schedule_time.outputs.should_run == 'true' && always()
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          PDF_CHANGED: ${{ steps.commit_pdf.outputs.pdf_changed }}
+          COMMIT_STATUS: ${{ steps.commit_pdf.outputs.commit_status }}
+          COMMIT_SHA: ${{ steps.commit_pdf.outputs.commit_sha }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python scripts/send_weekly_ad_notification.py
+
+      - name: Fail workflow if upload did not complete
+        if: steps.schedule_time.outputs.should_run == 'true' && (steps.fetch_pdf.outcome != 'success' || steps.commit_pdf.outputs.commit_status == 'failed')
+        run: |
+          echo "Weekly ad upload did not complete successfully. See the notification and logs for details."
+          exit 1
