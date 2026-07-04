@@ -9,7 +9,7 @@ import os
 import re
 import ssl
 import sys
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
@@ -58,8 +58,8 @@ def subject_week_numbers(subject: str) -> list[int]:
     ]
 
 
-def target_week_number(now: datetime | None = None) -> int:
-    """Return the vendor ad week published for the upcoming Sunday."""
+def target_ad_period(now: datetime | None = None) -> tuple[int, date, date]:
+    """Return the active Thursday-Wednesday ad week in Denver."""
     timezone = ZoneInfo(DENVER_TIMEZONE)
     if now is None:
         now = datetime.now(timezone)
@@ -68,13 +68,15 @@ def target_week_number(now: datetime | None = None) -> int:
     else:
         now = now.astimezone(timezone)
 
-    target_date = now + timedelta(days=7)
-    week = target_date.isocalendar().week
+    days_since_thursday = (now.weekday() - 3) % 7
+    ad_start = now.date() - timedelta(days=days_since_thursday)
+    ad_end = ad_start + timedelta(days=6)
+    week = ad_start.isocalendar().week
     print(
-        f"Target weekly ad is WK{week:02d}: current {DENVER_TIMEZONE} date "
-        f"{now.date()} plus one week."
+        f"Target weekly ad is WK{week:02d}, active {ad_start:%Y-%m-%d} through "
+        f"{ad_end:%Y-%m-%d} in {DENVER_TIMEZONE}."
     )
-    return week
+    return week, ad_start, ad_end
 
 
 def connect_to_gmail() -> imaplib.IMAP4_SSL:
@@ -277,8 +279,10 @@ def write_summary(summary: dict[str, Any]) -> None:
 def main() -> int:
     client: imaplib.IMAP4_SSL | None = None
     target_week: int | None = None
+    ad_start: date | None = None
+    ad_end: date | None = None
     try:
-        target_week = target_week_number()
+        target_week, ad_start, ad_end = target_ad_period()
         client = connect_to_gmail()
         select_search_mailbox(client)
         candidates = list_matching_messages(client)
@@ -297,6 +301,8 @@ def main() -> int:
                 "output_path": str(OUTPUT_PATH),
                 "image_paths": [str(path) for path in IMAGE_OUTPUT_PATHS],
                 "target_week": f"WK{target_week:02d}",
+                "ad_start": ad_start.isoformat(),
+                "ad_end": ad_end.isoformat(),
                 "week_indicator": week_indicator,
                 "issues": [],
             }
@@ -312,6 +318,8 @@ def main() -> int:
                 "output_path": str(OUTPUT_PATH),
                 "image_paths": [str(path) for path in IMAGE_OUTPUT_PATHS],
                 "target_week": f"WK{target_week:02d}" if target_week else None,
+                "ad_start": ad_start.isoformat() if ad_start else None,
+                "ad_end": ad_end.isoformat() if ad_end else None,
                 "week_indicator": None,
                 "issues": [str(exc)],
             }

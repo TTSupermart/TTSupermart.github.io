@@ -37,6 +37,8 @@ def load_summary() -> dict[str, Any]:
             "gmail_subject": None,
             "output_path": "images/weekly-ad.pdf",
             "week_indicator": None,
+            "ad_start": None,
+            "ad_end": None,
             "issues": ["The Gmail download step did not create a summary file."],
         }
     return json.loads(SUMMARY_PATH.read_text(encoding="utf-8"))
@@ -65,6 +67,7 @@ def build_body(summary: dict[str, Any]) -> str:
         "",
         f"Download status: {summary.get('status', 'unknown')}",
         f"Week indicator: {summary.get('week_indicator') or 'None'}",
+        f"Ad period: {summary.get('ad_start') or 'Unknown'} through {summary.get('ad_end') or 'Unknown'}",
         f"Gmail attachment found: {summary.get('attachment_filename') or 'None'}",
         f"Gmail subject: {summary.get('gmail_subject') or 'None'}",
         f"Saved path: {summary.get('output_path') or 'images/weekly-ad.pdf'}",

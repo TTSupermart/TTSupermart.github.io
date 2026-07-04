@@ -27,9 +27,21 @@ def make_pdf(page_count: int) -> bytes:
 
 
 class WeeklyAdSelectionTests(unittest.TestCase):
-    def test_target_is_upcoming_ad_week_in_denver(self) -> None:
+    def test_saturday_uses_the_ad_that_started_thursday(self) -> None:
         now = datetime(2026, 7, 4, 9, 0, tzinfo=ZoneInfo("America/Denver"))
-        self.assertEqual(fetch_weekly_ad.target_week_number(now), 28)
+        week, ad_start, ad_end = fetch_weekly_ad.target_ad_period(now)
+
+        self.assertEqual(week, 27)
+        self.assertEqual(ad_start.isoformat(), "2026-07-02")
+        self.assertEqual(ad_end.isoformat(), "2026-07-08")
+
+    def test_wednesday_keeps_current_ad_and_thursday_switches(self) -> None:
+        timezone = ZoneInfo("America/Denver")
+        wednesday = datetime(2026, 7, 8, 23, 59, tzinfo=timezone)
+        thursday = datetime(2026, 7, 9, 0, 0, tzinfo=timezone)
+
+        self.assertEqual(fetch_weekly_ad.target_ad_period(wednesday)[0], 27)
+        self.assertEqual(fetch_weekly_ad.target_ad_period(thursday)[0], 28)
 
     def test_newer_future_week_does_not_replace_target_week(self) -> None:
         four_page_pdf = make_pdf(4)

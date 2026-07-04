@@ -2,8 +2,8 @@ name: Update weekly ad PDF
 
 on:
   schedule:
-    - cron: "7 14 * * 3"
-    - cron: "7 15 * * 3"
+    - cron: "7 14 * * 4"
+    - cron: "7 15 * * 4"
   workflow_dispatch: {}
 
 permissions:
@@ -30,17 +30,17 @@ jobs:
 
           denver_offset="$(TZ=America/Denver date +'%z')"
           if [[ "$denver_offset" == "-0600" ]]; then
-            expected_schedule="7 14 * * 3"
+            expected_schedule="7 14 * * 4"
             expected_label="08:07 MDT"
           else
-            expected_schedule="7 15 * * 3"
+            expected_schedule="7 15 * * 4"
             expected_label="08:07 MST"
           fi
 
           actual_schedule="${{ github.event.schedule }}"
           if [[ "$actual_schedule" == "$expected_schedule" ]]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
-            echo "Scheduled run matches Wednesday $expected_label America/Denver; continuing."
+            echo "Scheduled run matches Thursday $expected_label America/Denver; continuing."
           else
             echo "should_run=false" >> "$GITHUB_OUTPUT"
             echo "Scheduled cron $actual_schedule is not the active Denver 8:07 AM cron today; skipping."
