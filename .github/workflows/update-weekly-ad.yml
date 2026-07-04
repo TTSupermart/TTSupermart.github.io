@@ -60,7 +60,7 @@ jobs:
 
       - name: Install PDF tooling
         if: steps.schedule_time.outputs.should_run == 'true'
-        run: python -m pip install --upgrade pypdf
+        run: python -m pip install --upgrade pypdf pymupdf
 
       - name: Download weekly ad PDF from Gmail
         id: fetch_pdf
@@ -87,8 +87,8 @@ jobs:
           set +e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add images/weekly-ad.pdf
-          git commit -m "Update weekly ad PDF"
+          git add images/weekly-ad.pdf images/weekly-ad.jpg images/weekly-ad-page-2.jpg images/weekly-ad-page-3.jpg images/weekly-ad-page-4.jpg
+          git commit -m "Update weekly ad PDF and images"
           commit_result=$?
           if [[ $commit_result -eq 0 ]]; then
             git push origin HEAD:main
@@ -101,7 +101,7 @@ jobs:
           if [[ $push_result -eq 0 ]]; then
             echo "commit_status=pushed" >> "$GITHUB_OUTPUT"
             echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-            echo "Committed and pushed updated weekly ad PDF."
+            echo "Committed and pushed updated weekly ad PDF and images."
           else
             echo "commit_status=failed" >> "$GITHUB_OUTPUT"
             echo "commit_sha=" >> "$GITHUB_OUTPUT"

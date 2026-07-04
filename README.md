@@ -4,7 +4,9 @@
 
 The `Update weekly ad PDF` GitHub Actions workflow runs every Wednesday at 8:07 AM America/Denver and can also be run manually from the Actions tab. GitHub schedules are UTC-only, so the workflow includes both possible UTC times for Denver daylight and standard time, then skips unless the runner sees Wednesday 8:07 AM in `America/Denver`.
 
-The workflow signs in to Gmail using IMAP over SSL, searches for emails whose subject contains `Web Ad`, and considers only messages with a PDF attachment. It prefers the newest matching message whose subject includes a week indicator such as `WK26` or `WK27`, then falls back to the newest matching message without one. The selected PDF must have exactly 4 pages. It is saved to `images/weekly-ad.pdf` and committed to `main` only when its contents changed.
+The workflow signs in to Gmail using IMAP over SSL, searches for emails whose subject contains `Web Ad`, and considers only messages with a PDF attachment. The target is the upcoming advertising week: the current America/Denver ISO week plus one. For example, a Wednesday in WK27 selects only a `WK28` email and rejects newer `WK29` mail. The selected PDF must have exactly 4 pages.
+
+The PDF is saved to `images/weekly-ad.pdf`, and its four pages are rendered to the JPG files displayed by `weekly-ad.html`. The PDF and JPGs are committed to `main` only when the PDF contents changed.
 
 After each real Wednesday run, the workflow sends a summary to the Gmail account using SMTP over SSL. The summary includes the attachment filename, week indicator, whether the PDF changed, commit status, and any issues. Notification delivery is non-critical: an SMTP failure is logged but does not turn an otherwise successful PDF update into a failed workflow.
 

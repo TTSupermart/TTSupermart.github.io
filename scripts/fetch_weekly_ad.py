@@ -9,22 +9,32 @@ import os
 import re
 import ssl
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from email import policy
 from email.message import Message
 from email.parser import BytesParser
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
+import pymupdf
 from pypdf import PdfReader
 
 
 IMAP_HOST = "imap.gmail.com"
 IMAP_PORT = 993
 OUTPUT_PATH = Path("images/weekly-ad.pdf")
+IMAGE_OUTPUT_PATHS = (
+    Path("images/weekly-ad.jpg"),
+    Path("images/weekly-ad-page-2.jpg"),
+    Path("images/weekly-ad-page-3.jpg"),
+    Path("images/weekly-ad-page-4.jpg"),
+)
 SUMMARY_PATH = Path("work/weekly-ad-summary.json")
 EXPECTED_PAGE_COUNT = 4
+IMAGE_WIDTH = 998
+DENVER_TIMEZONE = "America/Denver"
 WEEK_RE = re.compile(r"\bWK\s*0?(\d{1,2})\b", re.IGNORECASE)
 INTERNALDATE_RE = re.compile(rb'INTERNALDATE "([^"]+)"')
 
@@ -46,6 +56,25 @@ def subject_week_numbers(subject: str) -> list[int]:
         for match in WEEK_RE.finditer(subject)
         if 1 <= (week := int(match.group(1))) <= 53
     ]
+
+
+def target_week_number(now: datetime | None = None) -> int:
+    """Return the vendor ad week published for the upcoming Sunday."""
+    timezone = ZoneInfo(DENVER_TIMEZONE)
+    if now is None:
+        now = datetime.now(timezone)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=timezone)
+    else:
+        now = now.astimezone(timezone)
+
+    target_date = now + timedelta(days=7)
+    week = target_date.isocalendar().week
+    print(
+        f"Target weekly ad is WK{week:02d}: current {DENVER_TIMEZONE} date "
+        f"{now.date()} plus one week."
+    )
+    return week
 
 
 def connect_to_gmail() -> imaplib.IMAP4_SSL:
@@ -179,20 +208,23 @@ def pdf_page_count(pdf_bytes: bytes) -> int:
     return len(PdfReader(BytesIO(pdf_bytes)).pages)
 
 
-def select_pdf(candidates: list[dict[str, Any]]) -> tuple[bytes, str, str, str | None]:
-    with_week = sorted(
-        (candidate for candidate in candidates if candidate["weeks"]),
-        key=lambda item: item["received_at"],
-        reverse=True,
-    )
-    without_week = sorted(
-        (candidate for candidate in candidates if not candidate["weeks"]),
+def select_pdf(candidates: list[dict[str, Any]], target_week: int) -> tuple[bytes, str, str, str]:
+    matching_week = sorted(
+        (candidate for candidate in candidates if target_week in candidate["weeks"]),
         key=lambda item: item["received_at"],
         reverse=True,
     )
 
+    if not matching_week:
+        found_weeks = sorted({week for candidate in candidates for week in candidate["weeks"]})
+        found_label = ", ".join(f"WK{week:02d}" for week in found_weeks) if found_weeks else "none"
+        raise WeeklyAdError(
+            f'No matching "Web Ad" email with a PDF attachment had target week WK{target_week:02d}. '
+            f"Week indicators found: {found_label}."
+        )
+
     invalid_attachments: list[str] = []
-    for candidate in [*with_week, *without_week]:
+    for candidate in matching_week:
         for filename, pdf_bytes in candidate["attachments"]:
             print(f"Checking PDF attachment {filename!r} from subject {candidate['subject']!r}.")
             try:
@@ -203,16 +235,38 @@ def select_pdf(candidates: list[dict[str, Any]]) -> tuple[bytes, str, str, str |
 
             print(f"Attachment {filename!r} has {page_count} page(s).")
             if page_count == EXPECTED_PAGE_COUNT:
-                week_indicator = None
-                if candidate["weeks"]:
-                    week_indicator = ", ".join(f"WK{week:02d}" for week in candidate["weeks"])
-                return pdf_bytes, candidate["subject"], filename, week_indicator
+                return pdf_bytes, candidate["subject"], filename, f"WK{target_week:02d}"
             invalid_attachments.append(f"{filename!r} had {page_count} page(s)")
 
     details = "; ".join(invalid_attachments)
     raise WeeklyAdError(
-        f"No matching PDF attachment had exactly {EXPECTED_PAGE_COUNT} pages. Checked: {details}"
+        f"No WK{target_week:02d} PDF attachment had exactly {EXPECTED_PAGE_COUNT} pages. Checked: {details}"
     )
+
+
+def render_pdf_pages(pdf_bytes: bytes) -> list[bytes]:
+    try:
+        with pymupdf.open(stream=pdf_bytes, filetype="pdf") as document:
+            if document.page_count != EXPECTED_PAGE_COUNT:
+                raise WeeklyAdError(
+                    f"Cannot render weekly ad images: PDF has {document.page_count} pages."
+                )
+
+            images: list[bytes] = []
+            for page_number, page in enumerate(document, start=1):
+                scale = IMAGE_WIDTH / page.rect.width
+                pixmap = page.get_pixmap(
+                    matrix=pymupdf.Matrix(scale, scale),
+                    colorspace=pymupdf.csRGB,
+                    alpha=False,
+                )
+                images.append(pixmap.tobytes("jpeg", jpg_quality=90))
+                print(f"Rendered weekly ad page {page_number} at {pixmap.width}x{pixmap.height}.")
+            return images
+    except WeeklyAdError:
+        raise
+    except Exception as exc:
+        raise WeeklyAdError(f"Could not render weekly ad JPG images: {exc}") from exc
 
 
 def write_summary(summary: dict[str, Any]) -> None:
@@ -222,25 +276,32 @@ def write_summary(summary: dict[str, Any]) -> None:
 
 def main() -> int:
     client: imaplib.IMAP4_SSL | None = None
+    target_week: int | None = None
     try:
+        target_week = target_week_number()
         client = connect_to_gmail()
         select_search_mailbox(client)
         candidates = list_matching_messages(client)
-        pdf_bytes, subject, filename, week_indicator = select_pdf(candidates)
+        pdf_bytes, subject, filename, week_indicator = select_pdf(candidates, target_week)
+        image_bytes = render_pdf_pages(pdf_bytes)
 
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT_PATH.write_bytes(pdf_bytes)
+        for image_path, page_bytes in zip(IMAGE_OUTPUT_PATHS, image_bytes, strict=True):
+            image_path.write_bytes(page_bytes)
         write_summary(
             {
                 "status": "success",
                 "attachment_filename": filename,
                 "gmail_subject": subject,
                 "output_path": str(OUTPUT_PATH),
+                "image_paths": [str(path) for path in IMAGE_OUTPUT_PATHS],
+                "target_week": f"WK{target_week:02d}",
                 "week_indicator": week_indicator,
                 "issues": [],
             }
         )
-        print(f"Saved {filename!r} from subject {subject!r} to {OUTPUT_PATH}.")
+        print(f"Saved {filename!r} and four rendered JPG pages for {week_indicator}.")
         return 0
     except (WeeklyAdError, OSError, imaplib.IMAP4.error) as exc:
         write_summary(
@@ -249,6 +310,8 @@ def main() -> int:
                 "attachment_filename": None,
                 "gmail_subject": None,
                 "output_path": str(OUTPUT_PATH),
+                "image_paths": [str(path) for path in IMAGE_OUTPUT_PATHS],
+                "target_week": f"WK{target_week:02d}" if target_week else None,
                 "week_indicator": None,
                 "issues": [str(exc)],
             }
