@@ -4,12 +4,7 @@ on:
   schedule:
     - cron: "7 14 * * 3"
     - cron: "7 15 * * 3"
-  workflow_dispatch:
-    inputs:
-      week:
-        description: "Optional week override, such as WK25 or 25"
-        required: false
-        type: string
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -72,10 +67,8 @@ jobs:
         if: steps.schedule_time.outputs.should_run == 'true'
         continue-on-error: true
         env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          WEEKLY_AD_WEEK: ${{ github.event.inputs.week }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python scripts/fetch_weekly_ad.py
 
       - name: Commit and push if PDF changed
@@ -117,11 +110,10 @@ jobs:
 
       - name: Send upload notification
         if: steps.schedule_time.outputs.should_run == 'true' && always()
+        continue-on-error: true
         env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           PDF_CHANGED: ${{ steps.commit_pdf.outputs.pdf_changed }}
           COMMIT_STATUS: ${{ steps.commit_pdf.outputs.commit_status }}
           COMMIT_SHA: ${{ steps.commit_pdf.outputs.commit_sha }}

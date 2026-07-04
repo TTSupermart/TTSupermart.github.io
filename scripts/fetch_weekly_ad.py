@@ -1,34 +1,32 @@
 #!/usr/bin/env python3
-"""Download the newest weekly ad PDF attachment from Gmail."""
+"""Download the newest four-page weekly ad PDF from Gmail over IMAP."""
 
 from __future__ import annotations
 
-import base64
+import imaplib
 import json
 import os
 import re
+import ssl
 import sys
-import tempfile
-import urllib.error
-import urllib.parse
-import urllib.request
 from datetime import datetime
+from email import policy
+from email.message import Message
+from email.parser import BytesParser
+from io import BytesIO
 from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from pypdf import PdfReader
 
 
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me"
-SEARCH_QUERY = 'subject:"Web Ad" has:attachment filename:pdf'
+IMAP_HOST = "imap.gmail.com"
+IMAP_PORT = 993
 OUTPUT_PATH = Path("images/weekly-ad.pdf")
 SUMMARY_PATH = Path("work/weekly-ad-summary.json")
 EXPECTED_PAGE_COUNT = 4
-MAX_MESSAGES_TO_CHECK = 50
-DENVER_TIMEZONE = "America/Denver"
 WEEK_RE = re.compile(r"\bWK\s*0?(\d{1,2})\b", re.IGNORECASE)
+INTERNALDATE_RE = re.compile(rb'INTERNALDATE "([^"]+)"')
 
 
 class WeeklyAdError(RuntimeError):
@@ -42,167 +40,179 @@ def require_env(name: str) -> str:
     return value
 
 
-def current_week_number() -> int:
-    override = os.environ.get("WEEKLY_AD_WEEK", "").strip()
-    if override:
-        match = re.fullmatch(r"(?:WK)?\s*0?(\d{1,2})", override, re.IGNORECASE)
-        if not match:
-            raise WeeklyAdError(f"Invalid WEEKLY_AD_WEEK override: {override!r}. Use a value like WK25 or 25.")
-        week = int(match.group(1))
-        if not 1 <= week <= 53:
-            raise WeeklyAdError(f"Invalid WEEKLY_AD_WEEK override: {override!r}. Week must be 1 through 53.")
-        print(f"Using manual weekly ad week override: WK{week:02d}.")
-        return week
-
-    now = datetime.now(ZoneInfo(DENVER_TIMEZONE))
-    week = now.isocalendar().week
-    print(f"Current {DENVER_TIMEZONE} ISO week is WK{week:02d}.")
-    return week
-
-
 def subject_week_numbers(subject: str) -> list[int]:
-    return [int(match.group(1)) for match in WEEK_RE.finditer(subject)]
+    return [
+        week
+        for match in WEEK_RE.finditer(subject)
+        if 1 <= (week := int(match.group(1))) <= 53
+    ]
 
 
-def request_json(url: str, *, method: str = "GET", token: str | None = None, data: dict[str, str] | None = None) -> dict[str, Any]:
-    body = None
-    headers = {"Accept": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    if data is not None:
-        body = urllib.parse.urlencode(data).encode("utf-8")
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-
-    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+def connect_to_gmail() -> imaplib.IMAP4_SSL:
+    print(f"Connecting to Gmail IMAP over SSL at {IMAP_HOST}:{IMAP_PORT}.")
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise WeeklyAdError(f"HTTP {exc.code} from {url}: {detail}") from exc
-    except urllib.error.URLError as exc:
-        raise WeeklyAdError(f"Request failed for {url}: {exc.reason}") from exc
-
-
-def get_access_token() -> str:
-    print("Requesting Gmail OAuth access token.")
-    response = request_json(
-        TOKEN_URL,
-        method="POST",
-        data={
-            "client_id": require_env("GOOGLE_CLIENT_ID"),
-            "client_secret": require_env("GOOGLE_CLIENT_SECRET"),
-            "refresh_token": require_env("GOOGLE_REFRESH_TOKEN"),
-            "grant_type": "refresh_token",
-        },
-    )
-    access_token = response.get("access_token")
-    if not access_token:
-        raise WeeklyAdError("Google OAuth response did not include an access token.")
-    return access_token
-
-
-def gmail_get(token: str, path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
-    query = f"?{urllib.parse.urlencode(params)}" if params else ""
-    return request_json(f"{GMAIL_API}/{path}{query}", token=token)
-
-
-def list_matching_messages(token: str) -> list[dict[str, Any]]:
-    print(f"Searching Gmail for: {SEARCH_QUERY}")
-    messages: list[dict[str, Any]] = []
-    page_token: str | None = None
-
-    while len(messages) < MAX_MESSAGES_TO_CHECK:
-        params = {"q": SEARCH_QUERY, "maxResults": "10"}
-        if page_token:
-            params["pageToken"] = page_token
-
-        response = gmail_get(token, "messages", params)
-        messages.extend(response.get("messages", []))
-        page_token = response.get("nextPageToken")
-        if not page_token:
-            break
-
-    if not messages:
-        raise WeeklyAdError('No Gmail messages found with subject containing "Web Ad" and a PDF attachment.')
-
-    print(f"Found {len(messages)} matching Gmail message(s) to inspect.")
-    return messages[:MAX_MESSAGES_TO_CHECK]
-
-
-def header_value(message: dict[str, Any], name: str) -> str:
-    headers = message.get("payload", {}).get("headers", [])
-    for header in headers:
-        if header.get("name", "").lower() == name.lower():
-            return header.get("value", "")
-    return ""
-
-
-def iter_parts(part: dict[str, Any]):
-    yield part
-    for child in part.get("parts", []) or []:
-        yield from iter_parts(child)
-
-
-def pdf_attachment_parts(message: dict[str, Any]) -> list[dict[str, Any]]:
-    parts = []
-    for part in iter_parts(message.get("payload", {})):
-        filename = part.get("filename", "")
-        body = part.get("body", {})
-        mime_type = part.get("mimeType", "")
-        if body.get("attachmentId") and (filename.lower().endswith(".pdf") or mime_type == "application/pdf"):
-            parts.append(part)
-    return parts
-
-
-def fetch_message_details(token: str, messages: list[dict[str, Any]], target_week: int) -> list[dict[str, Any]]:
-    detailed = []
-    for index, item in enumerate(messages, start=1):
-        message = gmail_get(
-            token,
-            f"messages/{item['id']}",
-            {"format": "full"},
+        client = imaplib.IMAP4_SSL(
+            IMAP_HOST,
+            IMAP_PORT,
+            ssl_context=ssl.create_default_context(),
         )
-        subject = header_value(message, "Subject")
-        internal_date = int(message.get("internalDate", "0"))
-        pdf_count = len(pdf_attachment_parts(message))
+        client.login(require_env("GMAIL_ADDRESS"), require_env("GMAIL_APP_PASSWORD"))
+        return client
+    except (OSError, imaplib.IMAP4.error) as exc:
+        raise WeeklyAdError(f"Could not sign in to Gmail IMAP: {exc}") from exc
+
+
+def all_mail_mailbox(client: imaplib.IMAP4_SSL) -> str | None:
+    """Find Gmail's locale-aware All Mail mailbox from its special-use flag."""
+    try:
+        status, mailboxes = client.list()
+    except imaplib.IMAP4.error:
+        return None
+    if status != "OK" or not mailboxes:
+        return None
+
+    for mailbox in mailboxes:
+        if mailbox and b"\\All" in mailbox:
+            match = re.search(rb'((?:"(?:[^"\\]|\\.)*")|(?:[^ ]+))$', mailbox)
+            if match:
+                return match.group(1).decode("utf-8", errors="replace")
+    return None
+
+
+def select_search_mailbox(client: imaplib.IMAP4_SSL) -> str:
+    candidates = [all_mail_mailbox(client), '"[Gmail]/All Mail"', "INBOX"]
+    tried: set[str] = set()
+    for mailbox in candidates:
+        if not mailbox or mailbox in tried:
+            continue
+        tried.add(mailbox)
+        try:
+            status, _ = client.select(mailbox, readonly=True)
+        except imaplib.IMAP4.error:
+            continue
+        if status == "OK":
+            print(f"Searching mailbox {mailbox} in read-only mode.")
+            return mailbox
+    raise WeeklyAdError("Could not select Gmail All Mail or INBOX for searching.")
+
+
+def internal_timestamp(metadata: bytes) -> float:
+    match = INTERNALDATE_RE.search(metadata)
+    if not match:
+        return 0.0
+    try:
+        value = match.group(1).decode("ascii")
+        return datetime.strptime(value, "%d-%b-%Y %H:%M:%S %z").timestamp()
+    except (UnicodeDecodeError, ValueError):
+        return 0.0
+
+
+def fetch_message(client: imaplib.IMAP4_SSL, uid: bytes) -> tuple[Message, float]:
+    status, response = client.uid("fetch", uid, "(BODY.PEEK[] INTERNALDATE)")
+    if status != "OK" or not response:
+        raise WeeklyAdError(f"Gmail IMAP could not fetch message UID {uid.decode()}.")
+
+    for item in response:
+        if isinstance(item, tuple) and len(item) >= 2:
+            metadata, raw_message = item[0], item[1]
+            if isinstance(metadata, bytes) and isinstance(raw_message, bytes):
+                message = BytesParser(policy=policy.default).parsebytes(raw_message)
+                return message, internal_timestamp(metadata)
+
+    raise WeeklyAdError(f"Gmail IMAP returned no message body for UID {uid.decode()}.")
+
+
+def pdf_attachments(message: Message) -> list[tuple[str, bytes]]:
+    attachments: list[tuple[str, bytes]] = []
+    for part in message.walk():
+        if part.is_multipart():
+            continue
+
+        filename = part.get_filename() or ""
+        is_pdf = filename.lower().endswith(".pdf") or part.get_content_type().lower() == "application/pdf"
+        is_attachment = part.get_content_disposition() == "attachment" or bool(filename)
+        if not is_pdf or not is_attachment:
+            continue
+
+        payload = part.get_payload(decode=True)
+        if payload:
+            attachments.append((filename or "attachment.pdf", payload))
+    return attachments
+
+
+def list_matching_messages(client: imaplib.IMAP4_SSL) -> list[dict[str, Any]]:
+    print('Searching Gmail for messages with a subject containing "Web Ad".')
+    status, response = client.uid("search", None, "SUBJECT", '"Web Ad"')
+    if status != "OK" or not response:
+        raise WeeklyAdError("Gmail IMAP search failed.")
+
+    uids = response[0].split()
+    if not uids:
+        raise WeeklyAdError('No Gmail messages found with a subject containing "Web Ad".')
+
+    candidates: list[dict[str, Any]] = []
+    for index, uid in enumerate(reversed(uids), start=1):
+        message, received_at = fetch_message(client, uid)
+        subject = str(message.get("Subject", ""))
+        attachments = pdf_attachments(message)
         weeks = subject_week_numbers(subject)
-        target_week_match = target_week in weeks
         print(
             f"Candidate {index}: subject={subject!r}, weeks={weeks or 'none'}, "
-            f"target_week_match={target_week_match}, pdf_attachments={pdf_count}"
+            f"pdf_attachments={len(attachments)}"
         )
-        detailed.append(
-            {
-                "message": message,
-                "subject": subject,
-                "internal_date": internal_date,
-                "weeks": weeks,
-                "target_week_match": target_week_match,
-                "pdf_count": pdf_count,
-            }
-        )
-    return detailed
+        if attachments:
+            candidates.append(
+                {
+                    "subject": subject,
+                    "received_at": received_at,
+                    "weeks": weeks,
+                    "attachments": attachments,
+                }
+            )
 
-
-def decode_gmail_data(data: str) -> bytes:
-    padding = "=" * (-len(data) % 4)
-    return base64.urlsafe_b64decode(data + padding)
-
-
-def download_attachment(token: str, message_id: str, attachment_id: str) -> bytes:
-    response = gmail_get(token, f"messages/{message_id}/attachments/{attachment_id}")
-    data = response.get("data")
-    if not data:
-        raise WeeklyAdError("Gmail attachment response did not include data.")
-    return decode_gmail_data(data)
+    if not candidates:
+        raise WeeklyAdError('No "Web Ad" email had a PDF attachment.')
+    return candidates
 
 
 def pdf_page_count(pdf_bytes: bytes) -> int:
-    with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_file:
-        temp_file.write(pdf_bytes)
-        temp_file.flush()
-        return len(PdfReader(temp_file.name).pages)
+    return len(PdfReader(BytesIO(pdf_bytes)).pages)
+
+
+def select_pdf(candidates: list[dict[str, Any]]) -> tuple[bytes, str, str, str | None]:
+    with_week = sorted(
+        (candidate for candidate in candidates if candidate["weeks"]),
+        key=lambda item: item["received_at"],
+        reverse=True,
+    )
+    without_week = sorted(
+        (candidate for candidate in candidates if not candidate["weeks"]),
+        key=lambda item: item["received_at"],
+        reverse=True,
+    )
+
+    invalid_attachments: list[str] = []
+    for candidate in [*with_week, *without_week]:
+        for filename, pdf_bytes in candidate["attachments"]:
+            print(f"Checking PDF attachment {filename!r} from subject {candidate['subject']!r}.")
+            try:
+                page_count = pdf_page_count(pdf_bytes)
+            except Exception as exc:
+                invalid_attachments.append(f"{filename!r} was not a readable PDF ({exc})")
+                continue
+
+            print(f"Attachment {filename!r} has {page_count} page(s).")
+            if page_count == EXPECTED_PAGE_COUNT:
+                week_indicator = None
+                if candidate["weeks"]:
+                    week_indicator = ", ".join(f"WK{week:02d}" for week in candidate["weeks"])
+                return pdf_bytes, candidate["subject"], filename, week_indicator
+            invalid_attachments.append(f"{filename!r} had {page_count} page(s)")
+
+    details = "; ".join(invalid_attachments)
+    raise WeeklyAdError(
+        f"No matching PDF attachment had exactly {EXPECTED_PAGE_COUNT} pages. Checked: {details}"
+    )
 
 
 def write_summary(summary: dict[str, Any]) -> None:
@@ -210,60 +220,13 @@ def write_summary(summary: dict[str, Any]) -> None:
     SUMMARY_PATH.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def select_and_download_pdf(token: str, candidates: list[dict[str, Any]], target_week: int) -> tuple[bytes, str, str]:
-    week_candidates = [candidate for candidate in candidates if candidate["target_week_match"]]
-    if not week_candidates:
-        found_weeks = sorted({week for candidate in candidates for week in candidate["weeks"]})
-        found_label = ", ".join(f"WK{week:02d}" for week in found_weeks) if found_weeks else "none"
-        raise WeeklyAdError(
-            f'No matching "Web Ad" email with a PDF attachment had the current week indicator WK{target_week:02d}. '
-            f"Week indicators found: {found_label}."
-        )
-
-    sorted_candidates = sorted(
-        week_candidates,
-        key=lambda item: item["internal_date"],
-        reverse=True,
-    )
-
-    saw_pdf = False
-    for candidate in sorted_candidates:
-        message = candidate["message"]
-        parts = pdf_attachment_parts(message)
-        if not parts:
-            continue
-        saw_pdf = True
-
-        for part in parts:
-            filename = part.get("filename") or "attachment.pdf"
-            attachment_id = part["body"]["attachmentId"]
-            print(f"Downloading PDF attachment {filename!r} from subject {candidate['subject']!r}.")
-            pdf_bytes = download_attachment(token, message["id"], attachment_id)
-            try:
-                page_count = pdf_page_count(pdf_bytes)
-            except Exception as exc:
-                raise WeeklyAdError(f"Downloaded attachment {filename!r} is not a readable PDF: {exc}") from exc
-
-            print(f"Attachment {filename!r} has {page_count} page(s).")
-            if page_count == EXPECTED_PAGE_COUNT:
-                return pdf_bytes, candidate["subject"], filename
-
-    if not saw_pdf:
-        raise WeeklyAdError('Matching Gmail messages were found, but none had a PDF attachment.')
-
-    raise WeeklyAdError(
-        f"No WK{target_week:02d} PDF attachment had exactly {EXPECTED_PAGE_COUNT} pages."
-    )
-
-
 def main() -> int:
-    target_week: int | None = None
+    client: imaplib.IMAP4_SSL | None = None
     try:
-        target_week = current_week_number()
-        token = get_access_token()
-        messages = list_matching_messages(token)
-        candidates = fetch_message_details(token, messages, target_week)
-        pdf_bytes, subject, filename = select_and_download_pdf(token, candidates, target_week)
+        client = connect_to_gmail()
+        select_search_mailbox(client)
+        candidates = list_matching_messages(client)
+        pdf_bytes, subject, filename, week_indicator = select_pdf(candidates)
 
         OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         OUTPUT_PATH.write_bytes(pdf_bytes)
@@ -273,25 +236,31 @@ def main() -> int:
                 "attachment_filename": filename,
                 "gmail_subject": subject,
                 "output_path": str(OUTPUT_PATH),
-                "target_week": f"WK{target_week:02d}",
+                "week_indicator": week_indicator,
                 "issues": [],
             }
         )
         print(f"Saved {filename!r} from subject {subject!r} to {OUTPUT_PATH}.")
         return 0
-    except WeeklyAdError as exc:
+    except (WeeklyAdError, OSError, imaplib.IMAP4.error) as exc:
         write_summary(
             {
                 "status": "failed",
                 "attachment_filename": None,
                 "gmail_subject": None,
                 "output_path": str(OUTPUT_PATH),
-                "target_week": f"WK{target_week:02d}" if target_week else None,
+                "week_indicator": None,
                 "issues": [str(exc)],
             }
         )
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
+    finally:
+        if client is not None:
+            try:
+                client.logout()
+            except (OSError, imaplib.IMAP4.error):
+                pass
 
 
 if __name__ == "__main__":

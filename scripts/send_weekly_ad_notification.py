@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
-"""Send a weekly ad workflow summary email using Gmail."""
+"""Send a weekly ad workflow summary email through Gmail SMTP."""
 
 from __future__ import annotations
 
-import base64
 import json
 import os
+import smtplib
+import ssl
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any
 
 
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
-PROFILE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 465
 SUMMARY_PATH = Path("work/weekly-ad-summary.json")
 
 
@@ -32,54 +29,6 @@ def require_env(name: str) -> str:
     return value
 
 
-def request_json(
-    url: str,
-    *,
-    method: str = "GET",
-    token: str | None = None,
-    data: bytes | dict[str, str] | None = None,
-    content_type: str = "application/json",
-) -> dict[str, Any]:
-    body: bytes | None
-    headers = {"Accept": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    if isinstance(data, dict):
-        body = urllib.parse.urlencode(data).encode("utf-8")
-        headers["Content-Type"] = "application/x-www-form-urlencoded"
-    else:
-        body = data
-        if data is not None:
-            headers["Content-Type"] = content_type
-
-    request = urllib.request.Request(url, data=body, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise NotificationError(f"HTTP {exc.code} from {url}: {detail}") from exc
-    except urllib.error.URLError as exc:
-        raise NotificationError(f"Request failed for {url}: {exc.reason}") from exc
-
-
-def get_access_token() -> str:
-    response = request_json(
-        TOKEN_URL,
-        method="POST",
-        data={
-            "client_id": require_env("GOOGLE_CLIENT_ID"),
-            "client_secret": require_env("GOOGLE_CLIENT_SECRET"),
-            "refresh_token": require_env("GOOGLE_REFRESH_TOKEN"),
-            "grant_type": "refresh_token",
-        },
-    )
-    access_token = response.get("access_token")
-    if not access_token:
-        raise NotificationError("Google OAuth response did not include an access token.")
-    return access_token
-
-
 def load_summary() -> dict[str, Any]:
     if not SUMMARY_PATH.exists():
         return {
@@ -87,6 +36,7 @@ def load_summary() -> dict[str, Any]:
             "attachment_filename": None,
             "gmail_subject": None,
             "output_path": "images/weekly-ad.pdf",
+            "week_indicator": None,
             "issues": ["The Gmail download step did not create a summary file."],
         }
     return json.loads(SUMMARY_PATH.read_text(encoding="utf-8"))
@@ -94,8 +44,8 @@ def load_summary() -> dict[str, Any]:
 
 def build_body(summary: dict[str, Any]) -> str:
     issues = list(summary.get("issues") or [])
-    commit_status = os.environ.get("COMMIT_STATUS", "not-run")
-    pdf_changed = os.environ.get("PDF_CHANGED", "unknown")
+    commit_status = os.environ.get("COMMIT_STATUS") or "not-run"
+    pdf_changed = os.environ.get("PDF_CHANGED") or "unknown"
     commit_sha = os.environ.get("COMMIT_SHA", "")
     run_url = os.environ.get("GITHUB_RUN_URL", "")
 
@@ -114,7 +64,7 @@ def build_body(summary: dict[str, Any]) -> str:
         "Weekly ad upload summary",
         "",
         f"Download status: {summary.get('status', 'unknown')}",
-        f"Target week: {summary.get('target_week') or 'Unknown'}",
+        f"Week indicator: {summary.get('week_indicator') or 'None'}",
         f"Gmail attachment found: {summary.get('attachment_filename') or 'None'}",
         f"Gmail subject: {summary.get('gmail_subject') or 'None'}",
         f"Saved path: {summary.get('output_path') or 'images/weekly-ad.pdf'}",
@@ -129,21 +79,28 @@ def build_body(summary: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def send_email(token: str, subject: str, body: str) -> None:
-    profile = request_json(PROFILE_URL, token=token)
-    sender = profile.get("emailAddress")
-    if not sender:
-        raise NotificationError("Could not determine the Gmail sender address.")
+def send_email(subject: str, body: str) -> None:
+    sender = require_env("GMAIL_ADDRESS")
+    password = require_env("GMAIL_APP_PASSWORD")
 
     message = EmailMessage()
-    message["To"] = require_env("NOTIFICATION_EMAIL")
+    message["To"] = sender
     message["From"] = sender
     message["Subject"] = subject
     message.set_content(body)
 
-    raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
-    payload = json.dumps({"raw": raw}).encode("utf-8")
-    request_json(SEND_URL, method="POST", token=token, data=payload)
+    print(f"Connecting to Gmail SMTP over SSL at {SMTP_HOST}:{SMTP_PORT}.")
+    try:
+        with smtplib.SMTP_SSL(
+            SMTP_HOST,
+            SMTP_PORT,
+            context=ssl.create_default_context(),
+            timeout=60,
+        ) as smtp:
+            smtp.login(sender, password)
+            smtp.send_message(message)
+    except (OSError, smtplib.SMTPException) as exc:
+        raise NotificationError(f"Could not send the Gmail SMTP notification: {exc}") from exc
 
 
 def main() -> int:
@@ -151,12 +108,12 @@ def main() -> int:
         summary = load_summary()
         body = build_body(summary)
         status = summary.get("status", "unknown")
-        commit_status = os.environ.get("COMMIT_STATUS", "not-run")
+        commit_status = os.environ.get("COMMIT_STATUS") or "not-run"
         subject = f"TTSupermart weekly ad upload: {status}, commit {commit_status}"
-        send_email(get_access_token(), subject, body)
+        send_email(subject, body)
         print("Sent weekly ad upload notification.")
         return 0
-    except NotificationError as exc:
+    except (NotificationError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
