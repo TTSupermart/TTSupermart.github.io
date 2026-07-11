@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>T&T Supermart | Bernalillo, NM</title>
   <meta name="description" content="T&T Supermart is a locally owned grocery store in Bernalillo, NM offering groceries, fresh departments, weekly specials, and local store services." />
+  <meta name="google-analytics-id" content="G-4SJ67LCJ5R" />
   <link rel="stylesheet" href="styles.css?v=41" />
+  <link rel="stylesheet" href="analytics.css?v=1" />
 </head>
 
 <body id="top">
@@ -80,7 +82,7 @@
     </section>
 
     <section id="weekly-specials" class="section">
-      <div class="weekly-section">
+      <div class="weekly-section" data-analytics-view="weekly_ad_view">
         <div class="section-heading">
           <p class="eyebrow">This week’s full ad</p>
           <h2>Weekly Specials</h2>
@@ -237,7 +239,7 @@
           </p>
         </div>
 
-        <div class="map-wrap">
+        <div class="map-wrap" data-analytics-view="map_view">
           <iframe
             title="Map to T&T Supermart"
             src="https://www.google.com/maps?q=960%20S%20Camino%20del%20Pueblo%2C%20Bernalillo%2C%20NM%2087004&output=embed"
@@ -282,8 +284,10 @@
     <p>960 S Camino del Pueblo, Bernalillo, NM 87004</p>
     <p><a href="tel:15058673210">(505) 867-3210</a></p>
     <p>&copy; <span id="year"></span> T&T Supermart. All rights reserved.</p>
+    <p><a href="privacy.html">Website privacy</a> &middot; <button class="privacy-choice" type="button" data-analytics-preferences>Analytics choices</button></p>
   </footer>
 
   <script src="script.js?v=41"></script>
+  <script src="analytics.js?v=1"></script>
 </body>
 </html>
