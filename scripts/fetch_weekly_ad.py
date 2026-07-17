@@ -111,7 +111,12 @@ def all_mail_mailbox(client: imaplib.IMAP4_SSL) -> str | None:
 
 
 def select_search_mailbox(client: imaplib.IMAP4_SSL) -> str:
-    candidates = [all_mail_mailbox(client), '"[Gmail]/All Mail"', "INBOX"]
+    candidates = [
+        "t-t-affiliated-ad-image",
+        all_mail_mailbox(client),
+        '"[Gmail]/All Mail"',
+        "INBOX",
+    ]
     tried: set[str] = set()
     for mailbox in candidates:
         if not mailbox or mailbox in tried:
@@ -124,7 +129,9 @@ def select_search_mailbox(client: imaplib.IMAP4_SSL) -> str:
         if status == "OK":
             print(f"Searching mailbox {mailbox} in read-only mode.")
             return mailbox
-    raise WeeklyAdError("Could not select Gmail All Mail or INBOX for searching.")
+    raise WeeklyAdError(
+        "Could not select the t-t-affiliated-ad-image label, Gmail All Mail, or INBOX for searching."
+    )
 
 
 def internal_timestamp(metadata: bytes) -> float:
